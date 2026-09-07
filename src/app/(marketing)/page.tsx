@@ -794,6 +794,253 @@ function TheReflectionSection() {
   );
 }
 
+
+// ─── Final CTA ───────────────────────────────────────────────────────────────
+
+function FinalCTASignal() {
+  // Decorative rehearsal signal: lines + animated bars + lines
+  const bars = [2, 4, 8, 14, 20, 16, 10, 6, 3];
+  return (
+    <div className="flex items-center gap-2">
+      {/* Left line */}
+      <span className="h-px w-12 bg-rehevo-amber/50" />
+      <span className="h-px w-3 bg-rehevo-amber/30" />
+      {/* Bars */}
+      {bars.map((h, i) => (
+        <motion.span
+          key={i}
+          className="block w-[2px] rounded-full bg-rehevo-amber"
+          style={{ height: `${h}px` }}
+          animate={{ scaleY: [1, 1.5, 0.7, 1.3, 1] }}
+          transition={{
+            duration: 2.2,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.12,
+          }}
+        />
+      ))}
+      {/* Right line */}
+      <span className="h-px w-3 bg-rehevo-amber/30" />
+      <span className="h-px w-12 bg-rehevo-amber/50" />
+    </div>
+  );
+}
+
+function FinalCTASection() {
+  return (
+    <section className="relative flex items-center justify-center overflow-hidden min-h-[80vh] md:min-h-[75vh]">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/images/hero/final-cta.png"
+          alt=""
+          fill
+          className="object-cover object-center opacity-90"
+          sizes="100vw"
+        />
+        {/* Dark overlay to keep text legible and cinematic */}
+        <div className="absolute inset-0 bg-ink-950/55" />
+        {/* Top blend from previous section */}
+        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-ink-950 to-transparent pointer-events-none" />
+        {/* Bottom hard cutoff into footer */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-ink-950 to-transparent pointer-events-none" />
+      </div>
+
+      {/* Content — centred */}
+      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-16 py-28 md:py-36 flex flex-col items-center text-center">
+        {/* Eyebrow */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-center gap-3 mb-8"
+        >
+          <span className="h-px w-10 bg-rehevo-amber" />
+          <p className="text-[10px] font-medium tracking-[0.28em] uppercase text-foreground/65">
+            The next moment is yours.
+          </p>
+          <span className="h-px w-10 bg-rehevo-amber" />
+        </motion.div>
+
+        {/* Headline */}
+        <motion.h2
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+          className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-[3.75rem] xl:text-[4.25rem] leading-[1.08] tracking-tight text-foreground max-w-3xl mb-10"
+        >
+          The next conversation is real.
+          <br />
+          Your rehearsal doesn&apos;t have to be.
+        </motion.h2>
+
+        {/* CTA Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1], delay: 0.18 }}
+          className="mb-14"
+        >
+          <Link href="/onboarding">
+            <button
+              className="
+                group flex items-center gap-3 px-8 py-3.5
+                border border-foreground/40 hover:border-foreground/70
+                rounded-full text-sm font-medium text-foreground
+                hover:bg-foreground/5
+                transition-all duration-300
+                cursor-pointer
+              "
+            >
+              Start rehearsing
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </button>
+          </Link>
+        </motion.div>
+
+        {/* Rehearsal signal */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+        >
+          <FinalCTASignal />
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Footer ──────────────────────────────────────────────────────────────────
+
+const FOOTER_LINKS = {
+  PRODUCT: [
+    { label: "How it works", href: "/how-it-works" },
+    { label: "Scenarios", href: "/scenarios" },
+  ],
+  COMPANY: [
+    { label: "Why Rehevo", href: "/how-it-works" },
+    { label: "About", href: "/about" },
+  ],
+  SUPPORT: [
+    { label: "Help", href: "/help" },
+    { label: "Contact", href: "/contact" },
+  ],
+  LEGAL: [
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms", href: "/terms" },
+  ],
+};
+
+function LinkedInIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M3.56 5.34H1.11v8.32h2.45V5.34zm-1.23-3.9A1.42 1.42 0 1 0 2.34 4.6a1.42 1.42 0 0 0 0-3.17zm10.95 3.66c-1.3 0-2.17.71-2.53 1.39h-.04V5.34H8.3v8.32h2.44V9.5c0-1.03.19-2.02 1.47-2.02 1.26 0 1.28 1.18 1.28 2.09v4.09h2.44V9.1c0-2.12-.46-3.75-2.93-3.75v-.25z" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" aria-hidden="true">
+      <path d="M11.48 0h2.23L8.8 5.79 14.5 15h-4.55l-3.5-4.64L2.48 15H.25l5.23-6.14L0 0h4.67L7.8 4.23 11.48 0zm-.78 13.48h1.24L4.35 1.24H3.02l7.68 12.24z" />
+    </svg>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="bg-ink-950 border-t border-foreground/[0.07]">
+      {/* Main footer body */}
+      <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-16 py-14 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-12 md:gap-20">
+
+          {/* ── Left — brand block ── */}
+          <div className="flex flex-col gap-4">
+            <Image
+              src="/rehevo-logo.png"
+              alt="REHEVO"
+              width={140}
+              height={32}
+              className="h-6"
+            />
+            <p className="text-sm text-foreground/65 leading-relaxed">
+              Practice the moment before it matters.
+            </p>
+          </div>
+
+          {/* ── Right — link columns + social ── */}
+          <div className="flex flex-col gap-8">
+            {/* Link columns */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-12">
+              {(Object.entries(FOOTER_LINKS) as [string, { label: string; href: string }[]][]).map(([col, links]) => (
+                <div key={col} className="flex flex-col gap-3">
+                  <p className="text-[9px] font-medium tracking-[0.22em] uppercase text-foreground/40">
+                    {col}
+                  </p>
+                  {links.map((link) => (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className="text-sm text-foreground/60 hover:text-foreground transition-colors duration-200"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {/* Social icons — aligned right */}
+            <div className="flex items-center gap-3 md:justify-end">
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+                className="w-7 h-7 flex items-center justify-center rounded border border-foreground/15 text-foreground/45 hover:text-foreground hover:border-foreground/35 transition-all duration-200"
+              >
+                <LinkedInIcon />
+              </a>
+              <a
+                href="https://x.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="X (Twitter)"
+                className="w-7 h-7 flex items-center justify-center rounded border border-foreground/15 text-foreground/45 hover:text-foreground hover:border-foreground/35 transition-all duration-200"
+              >
+                <XIcon />
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Bottom bar ── */}
+      <div className="border-t border-foreground/[0.06]">
+        <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-16 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <p className="text-[11px] text-foreground/35">
+            © 2026 Rehevo
+          </p>
+          <div className="flex items-center gap-0 text-[11px] text-foreground/35">
+            <Link href="/privacy" className="hover:text-foreground/65 transition-colors duration-200">Privacy</Link>
+            <span className="mx-2 text-foreground/20">/</span>
+            <Link href="/terms" className="hover:text-foreground/65 transition-colors duration-200">Terms</Link>
+            <span className="mx-2 text-foreground/20">/</span>
+            <Link href="/cookie-settings" className="hover:text-foreground/65 transition-colors duration-200">Cookie settings</Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 export default function MarketingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -1005,6 +1252,12 @@ export default function MarketingPage() {
 
       {/* The Reflection */}
       <TheReflectionSection />
+
+      {/* Final CTA */}
+      <FinalCTASection />
+
+      {/* Footer */}
+      <Footer />
     </main>
   );
 }
