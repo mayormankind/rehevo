@@ -12,7 +12,11 @@ export function useCornerPin(containerRef, quadPct) {
   const [transform, setTransform] = useState("");
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    // Null quad means "desktop corner-pin is not active" — skip entirely.
+    if (!quadPct || !containerRef.current) {
+      setTransform("");
+      return;
+    }
 
     const recompute = () => {
       const rect = containerRef.current.getBoundingClientRect();
