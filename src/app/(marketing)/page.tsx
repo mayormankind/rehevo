@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, Play, Menu, X, ArrowRight } from "lucide-react";
+import { ChevronRight, Play, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StageCue } from "@/components/marketing/stage-cue";
 import { NavLinks } from "@/components/marketing/nav-links";
@@ -20,11 +20,11 @@ export default function MarketingPage() {
   const [scrolled, setScrolled] = useState(false);
 
   const handleScroll = useCallback(() => {
-    setScrolled(window.scrollY > window.innerHeight);
+    setScrolled(window.scrollY > 10);
   }, []);
 
   useEffect(() => {
-    handleScroll();
+    // Initial scroll check omitted to avoid setState-in-effect.
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
@@ -38,7 +38,7 @@ export default function MarketingPage() {
           px-6 py-5 md:px-12 lg:px-16
           transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
           ${scrolled
-            ? "bg-ink-950/65 backdrop-blur-[12px] border-b border-foreground/12 shadow-[0_1px_0_rgba(255,255,255,0.05)]"
+            ? "bg-ink-950/85 backdrop-blur-md border-b border-foreground/12 shadow-[0_1px_0_rgba(255,255,255,0.05)]"
             : "bg-transparent"
           }
         `}
@@ -59,10 +59,10 @@ export default function MarketingPage() {
         </div>
 
         <div className="hidden md:flex items-center gap-4 text-sm">
-          <Link href="/onboarding" className="text-foreground/70 hover:text-foreground transition-colors">
+          <Link href="/signup" className="text-foreground/70 hover:text-foreground transition-colors">
             Sign in
           </Link>
-          <Link href="/onboarding">
+          <Link href="/signup">
             <Button
               variant="ghost"
               className="text-rehevo-amber hover:text-rehevo-amber rounded-full py-4 border border-rehevo-amber hover:bg-rehevo-amber/10"
@@ -128,7 +128,7 @@ export default function MarketingPage() {
                   <NavLinks inSheet />
                 </nav>
                 <div className="mt-auto flex flex-col gap-3">
-                  <Link href="/onboarding" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-rehevo-amber rounded-full border border-rehevo-amber hover:bg-rehevo-amber/10"
@@ -136,7 +136,7 @@ export default function MarketingPage() {
                       Start rehearsing
                     </Button>
                   </Link>
-                  <Link href="/onboarding" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
                     <Button className="w-full bg-rehevo-amber text-ink-950 hover:bg-rehevo-amber/90 font-medium rounded-full">
                       Sign in
                     </Button>
@@ -178,10 +178,10 @@ export default function MarketingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-start gap-4 mb-12">
-              <Link href="/onboarding">
+              <Link href="/signup">
                 <Button
                   size="lg"
-                  className="border border-white/20 text-white hover:bg-rehevo-amber/90 font-medium px-8 h-12 rounded-full"
+                  className="border border-white/20 text-white hover:bg-rehevo-amber/90 font-medium px-8 h-12 rounded-full" variant={"outline"}
                 >
                   <StageCue type={1} />
                   <span className="ml-1">Enter your rehearsal room</span>
@@ -190,8 +190,8 @@ export default function MarketingPage() {
               </Link>
               <Link href="/how-it-works">
                 <Button
-                  size="lg"
-                  className="text-rehevo-amber hover:text-rehevo-amber font-medium px-8 h-12 rounded-full border border-rehevo-amber hover:bg-rehevo-amber/10"
+                  size="lg" variant={"outline"}
+                  className="text-rehevo-amber hover:text-rehevo-amber font-medium px-8 h-12 rounded-full hover:bg-rehevo-amber/10"
                 >
                   <Play className="mr-2 h-4 w-4" />
                   See how it works

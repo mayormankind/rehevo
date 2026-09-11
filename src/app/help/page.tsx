@@ -93,7 +93,7 @@ export default function HelpPage() {
                 {category.category}
               </p>
               <div className="flex flex-col gap-0">
-                {category.questions.map((item, i) => (
+                 {category.questions.map((item) => (
                   <div
                     key={item.q}
                     className="py-6 border-b border-foreground/[0.07] last:border-b-0"

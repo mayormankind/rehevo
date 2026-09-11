@@ -1,24 +1,54 @@
-"use client";
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { RehearsalRoomClient } from "@/components/rehevo/rehearsal-room-client";
 
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+export const metadata: Metadata = {
+  title: "Rehearsal Room — REHEVO",
+};
 
-export default function RehearsalPage({
+const SCENARIOS: Record<string, { label: string; title: string }> = {
+  interview: {
+    label: "Interview",
+    title: "Product Designer — Final Interview",
+  },
+  presentation: {
+    label: "Presentation",
+    title: "Q3 All-Hands — Executive Deck",
+  },
+  pitch: {
+    label: "Pitch",
+    title: "Series A — Investor Pitch",
+  },
+  defense: {
+    label: "Defense",
+    title: "PhD Thesis Defense",
+  },
+  difficult: {
+    label: "Difficult Conversation",
+    title: "Performance Review — Direct Report",
+  },
+};
+
+export default async function RehearsalPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const router = useRouter();
+  const supabase = await createClient();
+  const {
+    data,
+  } = await supabase.auth.getClaims();
 
-  return (
-    <main className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-serif mb-4">Rehearsal Room</h1>
-      <p className="text-lg mb-8">Scenario: {params.id}</p>
-      <div className="flex gap-4">
-        <Button onClick={() => router.push(`complete`)}>
-          End Rehearsal
-        </Button>
-      </div>
-    </main>
-  );
+  if (!data?.claims) {
+    redirect("/login");
+  }
+
+  const scenario = SCENARIOS[params.id];
+
+  if (!scenario) {
+    redirect("/app/dashboard");
+  }
+
+  return <RehearsalRoomClient scenarioLabel={scenario.label} scenarioTitle={scenario.title} />;
 }

@@ -1,10 +1,20 @@
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { AppShell } from "@/components/rehevo/app-shell";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // TODO: Add auth check. If not authenticated, redirect to /onboarding.
-  return <>{children}</>;
+  const supabase = await createClient();
+  const {
+    data,
+  } = await supabase.auth.getClaims();
+
+  if (!data?.claims) {
+    redirect("/login");
+  }
+
+  return <AppShell>{children}</AppShell>;
 }

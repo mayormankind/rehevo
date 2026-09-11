@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const STEPS = [
   {
@@ -65,7 +65,7 @@ export default function HowItWorksPage() {
           Practice the moment<br />before it matters.
         </h1>
         <p className="text-sm md:text-base text-foreground/55 leading-relaxed mb-16 max-w-md">
-          Rehevo follows a clear arc from preparation to performance. Each step builds on the last, so you're not just practicing — you're improving.
+          Rehevo follows a clear arc from preparation to performance. Each step builds on the last, so you&apos;re not just practicing — you&apos;re improving.
         </p>
 
         <div className="flex flex-col gap-0">
@@ -98,7 +98,7 @@ export default function HowItWorksPage() {
           <p className="text-xs text-foreground/40">
             Ready to start rehearsing?
           </p>
-          <Link href="/onboarding">
+          <Link href="/signup">
             <button
               className="
                 inline-flex items-center gap-2.5 px-6 py-3

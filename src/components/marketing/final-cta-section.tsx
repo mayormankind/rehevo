@@ -79,7 +79,7 @@ function FinalCTASection() {
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1], delay: 0.18 }}
           className="mb-14"
         >
-          <Link href="/onboarding">
+          <Link href="/signup">
             <button
               className="
                 group flex items-center gap-3 px-8 py-3.5

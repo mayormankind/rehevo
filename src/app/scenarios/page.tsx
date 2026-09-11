@@ -116,7 +116,7 @@ export default function ScenariosPage() {
                     {scenario.description}
                   </p>
                   <div className="flex items-center gap-2 text-xs text-foreground/35 group-hover:text-foreground/55 transition-colors">
-                    <span className="font-serif italic">"{scenario.question}"</span>
+                     <span className="font-serif italic">&ldquo;{scenario.question}&rdquo;</span>
                   </div>
                 </div>
               </Link>
