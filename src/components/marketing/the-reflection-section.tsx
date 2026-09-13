@@ -46,7 +46,7 @@ function TheReflectionSection() {
           alt=""
           fill
           className="object-cover object-center"
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-ink-950 to-transparent z-10 pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-ink-950 to-transparent z-10 pointer-events-none" />

@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SectionLabel } from "@/components/rehevo/section-label";
-import { EditorialHeading } from "@/components/rehevo/editorial-heading";
-import { Surface } from "@/components/rehevo/surface";
+import { StageCue } from "@/components/rehevo/stage-cue";
+import { SettingsPageClient } from "@/components/rehevo/settings-page-client";
 
 export const metadata: Metadata = {
   title: "Account — REHEVO",
@@ -25,63 +25,49 @@ export default async function SettingsPage() {
     .eq("id", user.id)
     .single();
 
+  const displayName = profile?.full_name || "Your Name";
+  const email = user.email || "";
+  const focusArea = profile?.primary_category || "Not set";
+  const joinedDate = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—";
+
+  const initials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <main className="min-h-screen bg-surface-light text-ink-950 antialiased">
-      <div className="w-full max-w-[720px] mx-auto px-6 md:px-12 lg:px-16 py-16 md:py-24 flex flex-col gap-16">
-        <div className="flex flex-col gap-6">
-          <SectionLabel>Account</SectionLabel>
-          <EditorialHeading level={1}>
-            Your rehearsal space.
-          </EditorialHeading>
+    <main className="bg-ink-950 text-surface-light antialiased">
+      <div className="w-full max-w-[1280px] mx-auto px-6 md:px-12 lg:px-16 py-14 md:py-20">
+        {/* Header block */}
+        <div className="mb-8 md:mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <StageCue type={2} />
+            <SectionLabel>Account</SectionLabel>
+          </div>
+          <h1 className="font-serif text-4xl md:text-5xl leading-[1.08] tracking-tight">
+            Your profile
+          </h1>
+          <p className="mt-3 text-sm text-surface-light/50 leading-relaxed max-w-xs">
+            Manage your personal information, preferences, and practice
+            settings.
+          </p>
         </div>
 
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4">
-            <SectionLabel>Profile</SectionLabel>
-            <Surface className="p-6 md:p-8">
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-1">
-                  <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-ink-800/50">
-                    Name
-                  </p>
-                  <p className="font-serif text-lg text-ink-950">
-                    {profile?.full_name || "Not set"}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-ink-800/50">
-                    Email
-                  </p>
-                  <p className="text-sm text-ink-800/70">
-                    {user.email}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-ink-800/50">
-                    Primary focus
-                  </p>
-                  <p className="text-sm text-ink-800/70">
-                    {profile?.primary_category || "Not set"}
-                  </p>
-                </div>
-              </div>
-            </Surface>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <SectionLabel>Session</SectionLabel>
-            <Surface className="p-6 md:p-8">
-              <div className="flex flex-col gap-4">
-                <p className="text-sm text-ink-800/60 leading-relaxed">
-                  Your rehearsal data is private. Sessions are stored securely and are only accessible by you.
-                </p>
-                <p className="text-xs text-ink-800/40">
-                  Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown"}
-                </p>
-              </div>
-            </Surface>
-          </div>
-        </div>
+        <SettingsPageClient
+          displayName={displayName}
+          email={email}
+          focusArea={focusArea}
+          joinedDate={joinedDate}
+          initials={initials}
+        />
       </div>
     </main>
   );

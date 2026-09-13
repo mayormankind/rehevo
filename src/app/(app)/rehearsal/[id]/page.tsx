@@ -1,40 +1,18 @@
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { RehearsalRoomClient } from "@/components/rehevo/rehearsal-room-client";
+import RehearsalRoomClient from "@/components/rehevo/rehearsal-room-client";
 
 export const metadata: Metadata = {
   title: "Rehearsal Room — REHEVO",
 };
 
-const SCENARIOS: Record<string, { label: string; title: string }> = {
-  interview: {
-    label: "Interview",
-    title: "Product Designer — Final Interview",
-  },
-  presentation: {
-    label: "Presentation",
-    title: "Q3 All-Hands — Executive Deck",
-  },
-  pitch: {
-    label: "Pitch",
-    title: "Series A — Investor Pitch",
-  },
-  defense: {
-    label: "Defense",
-    title: "PhD Thesis Defense",
-  },
-  difficult: {
-    label: "Difficult Conversation",
-    title: "Performance Review — Direct Report",
-  },
-};
-
 export default async function RehearsalPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data,
@@ -44,11 +22,21 @@ export default async function RehearsalPage({
     redirect("/login");
   }
 
-  const scenario = SCENARIOS[params.id];
+  const { data: session } = await supabase
+    .from("rehearsal_sessions")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  if (!scenario) {
-    redirect("/app/dashboard");
+  if (!session) {
+    redirect("/dashboard");
   }
 
-  return <RehearsalRoomClient scenarioLabel={scenario.label} scenarioTitle={scenario.title} />;
+  const { data: turns } = await supabase
+    .from("rehearsal_turns")
+    .select("*")
+    .eq("session_id", id)
+    .order("turn_number", { ascending: true });
+
+  return <RehearsalRoomClient sessionId={id} initialSession={session} initialTurns={turns || []} />;
 }

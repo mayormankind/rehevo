@@ -39,12 +39,11 @@ export default function OnboardingForm() {
       });
     }
 
-    router.push("/app/dashboard");
+    router.push("/dashboard");
   };
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-ink-950">
-      {/* Background image */}
       <div className="absolute inset-0 z-0">
         <Image
           src="/images/onboarding/onboarding-desktop.png"
@@ -53,7 +52,7 @@ export default function OnboardingForm() {
           priority
           className="hidden md:block object-cover object-center"
           style={{ opacity: 0.35 }}
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <Image
           src="/images/onboarding/onboarding-mobile.png"
@@ -62,17 +61,16 @@ export default function OnboardingForm() {
           priority
           className="block md:hidden object-cover object-center"
           style={{ opacity: 0.25 }}
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-ink-950/70 via-ink-950/50 to-ink-950/80" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink-950/30 via-transparent to-ink-950/20" />
       </div>
 
-      {/* Content */}
       <div className="relative z-10 flex flex-col flex-1">
-        <div className="w-full max-w-[720px] mx-auto px-6 md:px-12 lg:px-16 py-16 md:py-24 flex flex-col gap-12 flex-1">
+        <div className="w-full max-w-[720px] mx-auto px-6 md:px-12 lg:px-16 py-8 md:py-12 flex flex-col gap-8 flex-1">
           <motion.div
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -81,65 +79,67 @@ export default function OnboardingForm() {
               <StageCue type={2} />
               <SectionLabel>Prepare</SectionLabel>
             </div>
-            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl text-foreground leading-[1.08] tracking-tight">
+            <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl text-foreground leading-[1.08] tracking-tight">
               What are you preparing for?
             </h1>
-            <p className="text-sm md:text-base text-foreground/55 leading-relaxed max-w-md">
-              Choose the situation that matters most right now. Each scenario is designed to test a different dimension of your communication.
+            <p className="text-sm text-foreground/55 leading-relaxed max-w-md">
+              Choose the situation that matters most right now.
             </p>
           </motion.div>
 
           <motion.div
-            className="flex flex-col gap-4 flex-1"
+            className="flex-1 flex flex-col justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           >
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {CATEGORIES.map((cat) => {
-                const isSelected = selected === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setSelected(cat.id)}
-                    className={`
-                      w-full text-left px-5 py-4 border transition-all duration-300
-                      ${isSelected
-                        ? "border-rehevo-amber/40 bg-ink-900/40"
-                        : "border-foreground/10 hover:border-foreground/20 hover:bg-ink-900/20"
-                      }
-                    `}
-                    style={{ borderRadius: "6px" }}
-                  >
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between gap-4">
-                        <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-rehevo-amber">
-                          {cat.label}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {CATEGORIES.map((cat) => {
+                  const isSelected = selected === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelected(cat.id)}
+                      className={`
+                        text-left px-4 py-3 border transition-all duration-200
+                        ${isSelected
+                          ? "border-rehevo-amber/40 bg-ink-900/40"
+                          : "border-foreground/10 hover:border-foreground/20 hover:bg-ink-900/20"
+                        }
+                      `}
+                      style={{ borderRadius: "6px" }}
+                    >
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-rehevo-amber">
+                            {cat.label}
+                          </p>
+                          {isSelected && (
+                            <span className="text-[9px] text-rehevo-amber/80 tracking-wide font-medium">
+                              Selected
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-serif text-sm md:text-base text-foreground tracking-tight leading-snug">
+                          {cat.title}
+                        </h3>
+                        <p className="text-[11px] text-foreground/40 leading-relaxed line-clamp-2">
+                          {cat.question}
                         </p>
-                        {isSelected && (
-                          <span className="text-[10px] text-rehevo-amber/80 tracking-wide font-medium">
-                            Selected
-                          </span>
-                        )}
                       </div>
-                      <h3 className="font-serif text-base md:text-lg text-foreground tracking-tight">
-                        {cat.title}
-                      </h3>
-                      <p className="text-xs text-foreground/45 leading-relaxed max-w-lg">
-                        {cat.question}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
 
-              <div className="mt-4">
+              <div className="mt-2">
                 <RehevoButton
                   type="submit"
                   variant="default"
                   size="lg"
-                  className="w-full sm:w-auto"
+                  className="w-full md:w-auto"
                   disabled={!selected || loading}
                 >
                   {loading ? "Entering the room..." : "Enter the room"}
@@ -149,7 +149,6 @@ export default function OnboardingForm() {
             </form>
           </motion.div>
 
-          {/* Bottom amber accent */}
           <motion.div
             className="h-px bg-rehevo-amber/25"
             initial={{ scaleX: 0, originX: 0 }}

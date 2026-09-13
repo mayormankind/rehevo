@@ -21,7 +21,7 @@ function MomentsSection() {
           alt=""
           fill
           className="object-cover object-right opacity-70"
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/85 to-ink-950/20" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink-950/60 via-transparent to-ink-950/60" />

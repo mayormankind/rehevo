@@ -73,7 +73,7 @@ export async function proxy(request: NextRequest) {
 
   if (!isProtected && data?.claims && ["/login", "/onboarding"].includes(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/app/dashboard";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

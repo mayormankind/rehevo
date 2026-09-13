@@ -38,7 +38,7 @@ function FinalCTASection() {
           alt=""
           fill
           className="object-cover object-center opacity-90"
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <div className="absolute inset-0 bg-ink-950/55" />
         <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-ink-950 to-transparent pointer-events-none" />

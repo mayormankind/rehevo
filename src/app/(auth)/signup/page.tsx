@@ -56,7 +56,7 @@ export default function SignupPage() {
           priority
           className="hidden md:block object-cover object-center"
           style={{ opacity: 0.3 }}
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <Image
           src="/images/onboarding/onboarding-mobile.png"
@@ -65,7 +65,7 @@ export default function SignupPage() {
           priority
           className="block md:hidden object-cover object-center"
           style={{ opacity: 0.2 }}
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-ink-950/60 via-ink-950/40 to-ink-950/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink-950/30 via-transparent to-ink-950/20" />

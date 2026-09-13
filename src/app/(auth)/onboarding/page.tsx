@@ -10,7 +10,7 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getClaims();
 
   if (data?.claims) {
-    redirect("/app/dashboard");
+    redirect("/dashboard");
   }
 
   return (

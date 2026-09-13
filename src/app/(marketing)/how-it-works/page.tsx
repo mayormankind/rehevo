@@ -44,7 +44,7 @@ export default function HowItWorksPage() {
           alt=""
           fill
           className="object-cover object-center opacity-25"
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-ink-950/80 via-ink-950/60 to-ink-950/90" />
       </div>

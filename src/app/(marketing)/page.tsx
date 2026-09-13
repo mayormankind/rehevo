@@ -157,7 +157,7 @@ export default function MarketingPage() {
             fill
             priority
             className="object-cover object-center opacity-60"
-            sizes="100vw"
+            sizes="(max-width: 767px) 100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-ink-950/95 via-ink-950/70 to-ink-950/40" />
           <div className="absolute inset-0 bg-gradient-to-t from-ink-950/80 via-transparent to-ink-950/30" />
