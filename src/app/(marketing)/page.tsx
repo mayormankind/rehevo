@@ -85,102 +85,115 @@ export default function MarketingPage() {
         </div>
       </nav>
 
-      {/* Mobile menu — full-screen overlay */}
+      {/* Mobile menu — off-canvas drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[60] md:hidden bg-ink-950 flex flex-col"
-          >
-            {/* Top row */}
-            <div className="flex items-center justify-between px-6 py-5">
-              <Image
-                src="/rehevo-logo.png"
-                alt="REHEVO"
-                width={120}
-                height={28}
-                className="h-6 w-auto"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-foreground hover:text-foreground rounded-full"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <X className="h-5 w-5" />
-                <span className="sr-only">Close menu</span>
-              </Button>
-            </div>
-
-            {/* Links — large editorial, staggered entrance */}
-            <nav className="flex-1 flex flex-col justify-center px-8 gap-2">
-              {[
-                { label: "How it works", href: "/how-it-works" },
-                { label: "Scenarios", href: "/scenarios" },
-                { label: "Why Rehevo", href: "/how-it-works" },
-              ].map((item, i) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 12 }}
-                  transition={{
-                    duration: 0.45,
-                    delay: 0.08 + i * 0.07,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                >
-                  <Link
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="group flex items-center gap-4 py-4 border-b border-foreground/[0.07]"
-                  >
-                    <span className="h-px w-0 bg-rehevo-amber transition-all duration-300 group-hover:w-6" />
-                    <span className="font-serif text-3xl text-foreground/85 group-hover:text-foreground transition-colors">
-                      {item.label}
-                    </span>
-                  </Link>
-                </motion.div>
-              ))}
-            </nav>
-
-            {/* CTAs — full width, centered, room to breathe */}
+          <>
+            {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
-              transition={{ duration: 0.45, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="px-8 pb-10 flex flex-col gap-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-[60] md:hidden bg-ink-950/70 backdrop-blur-sm"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 260 }}
+              className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-[340px] z-[70] md:hidden bg-ink-950 border-l border-foreground/[0.08] flex flex-col"
             >
-              <Link
-                href="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block"
-              >
-                <Button className="w-full h-13 bg-rehevo-amber text-ink-950 hover:bg-rehevo-amber/90 font-medium rounded-full text-sm">
-                  Start rehearsing
-                </Button>
-              </Link>
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block"
-              >
+              {/* Top row */}
+              <div className="flex items-center justify-between px-6 py-5">
+                <Image
+                  src="/rehevo-logo.png"
+                  alt="REHEVO"
+                  width={120}
+                  height={28}
+                  className="h-6 w-auto"
+                />
                 <Button
                   variant="ghost"
-                  className="w-full h-13 text-foreground/70 hover:text-foreground rounded-full border border-foreground/20 hover:border-foreground/40 hover:bg-transparent text-sm"
+                  size="icon"
+                  className="text-foreground hover:text-foreground rounded-full"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  Sign in
+                  <X className="h-5 w-5" />
+                  <span className="sr-only">Close menu</span>
                 </Button>
-              </Link>
-              <p className="text-center text-[10px] tracking-[0.16em] uppercase text-foreground/25 pt-2">
-                Private by design
-              </p>
+              </div>
+
+              {/* Links — staggered entrance */}
+              <nav className="flex-1 flex flex-col px-6 pt-6">
+                {[
+                  { label: "How it works", href: "/how-it-works" },
+                  { label: "Scenarios", href: "/scenarios" },
+                  { label: "Why Rehevo", href: "/how-it-works" },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 16 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: 0.12 + i * 0.07,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                  >
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="group flex items-center gap-4 py-5 border-b border-foreground/[0.07]"
+                    >
+                      <span className="h-px w-0 bg-rehevo-amber transition-all duration-300 group-hover:w-5" />
+                      <span className="font-serif text-2xl text-foreground/85 group-hover:text-foreground transition-colors">
+                        {item.label}
+                      </span>
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
+
+              {/* CTAs — full width, centered, room to breathe */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ duration: 0.4, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                className="px-6 pb-8 flex flex-col gap-3"
+              >
+                <Link
+                  href="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block"
+                >
+                  <Button className="w-full h-12 bg-rehevo-amber text-ink-950 hover:bg-rehevo-amber/90 font-medium rounded-full text-sm">
+                    Start rehearsing
+                  </Button>
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block"
+                >
+                  <Button
+                    variant="ghost"
+                    className="w-full h-12 text-foreground/70 hover:text-foreground rounded-full border border-foreground/20 hover:border-foreground/40 hover:bg-transparent text-sm"
+                  >
+                    Sign in
+                  </Button>
+                </Link>
+                <p className="text-center text-[10px] tracking-[0.16em] uppercase text-foreground/25 pt-2">
+                  Private by design
+                </p>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
 

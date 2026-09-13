@@ -179,9 +179,8 @@ function AppShellInner({
   displayName?: string;
 }) {
   const pathname = usePathname();
-  // The rehearsal room is fully immersive — no chrome. Sub-routes
-  // (review, drill) get the navigation back.
-  const inRoom = /^\/rehearsal\/[^/]+$/.test(pathname);
+  // Everything under /rehearsal is immersive — room, reflection, drill.
+  const inRoom = /^\/rehearsal\//.test(pathname);
   const hide = hideNav || inRoom;
 
   return (

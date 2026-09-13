@@ -42,6 +42,75 @@ export function getNextAIResponse(scenarioId: string, turnNumber: number): strin
   return responses[index];
 }
 
+export interface MomentEvaluation {
+  score: number;
+  observation: string;
+  /** The weakest performance dimension — used to carry focus into drills */
+  dimension: string;
+}
+
+const DIMENSION_OFFSETS: { label: string; offset: number }[] = [
+  { label: "Composure", offset: 4 },
+  { label: "Clarity", offset: -2 },
+  { label: "Specificity", offset: -8 },
+  { label: "Reasoning", offset: 6 },
+  { label: "Delivery", offset: -1 },
+];
+
+const clampScore = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
+
+/**
+ * Evaluate a single user turn into score + observation + weakest dimension.
+ * Deterministic mock — stands in for the real engine until M5.
+ */
+export function evaluateMoment(content: string): MomentEvaluation {
+  const { score, observation } = evaluateResponse(content);
+  const length = content.trim().split(/\s+/).length;
+  const hasExample =
+    /\b(for example|for instance|specifically|in particular|like when)\b/i.test(
+      content
+    );
+  const hasStructure =
+    /\b(first|second|third|1\.|2\.|3\.|-|•)\b/i.test(content) ||
+    /\n/i.test(content);
+
+  let dimension = "Delivery";
+  if (!hasExample) dimension = "Specificity";
+  else if (length <= 20) dimension = "Clarity";
+  else if (!hasStructure) dimension = "Reasoning";
+
+  return { score, observation, dimension };
+}
+
+/**
+ * Five performance dimensions derived from all user turns in a session.
+ * Each dimension varies deterministically around the average turn score.
+ */
+export function sessionDimensions(
+  userTurns: string[]
+): { label: string; value: number }[] {
+  if (userTurns.length === 0) {
+    return DIMENSION_OFFSETS.map((d) => ({ label: d.label, value: 0 }));
+  }
+  const avg =
+    userTurns.reduce((sum, t) => sum + evaluateResponse(t).score, 0) /
+    userTurns.length;
+  return DIMENSION_OFFSETS.map((d) => ({
+    label: d.label,
+    value: clampScore(avg + d.offset),
+  }));
+}
+
+/** One-line editorial summary of how the session went. */
+export function sessionSummary(avgScore: number): string {
+  if (avgScore >= 80) return "You stayed composed even when pressed.";
+  if (avgScore >= 65)
+    return "You found your footing as the questions got harder.";
+  if (avgScore >= 50)
+    return "You had moments of clarity, but the pressure showed.";
+  return "This rep was about survival. The next one builds.";
+}
+
 export function evaluateResponse(userResponse: string): { score: number; observation: string } {
   const length = userResponse.trim().split(/\s+/).length;
   const hasExample = /\b(for example|for instance|specifically|in particular|like when)\b/i.test(userResponse);

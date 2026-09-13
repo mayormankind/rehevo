@@ -1,15 +1,16 @@
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { RehevoButton } from "@/components/rehevo/rehevo-button";
-import { StageCue } from "@/components/rehevo/stage-cue";
-import { SectionLabel } from "@/components/rehevo/section-label";
-import { RehevoMetric } from "@/components/rehevo/rehevo-metric";
-import { RehevoObservation } from "@/components/rehevo/rehevo-observation";
-import { RehevoTimeline } from "@/components/rehevo/rehevo-timeline";
+import {
+  evaluateMoment,
+  sessionDimensions,
+  sessionSummary,
+} from "@/lib/ai/mock-engine";
+import { getScenario } from "@/lib/constants/scenarios";
+import { ReflectionClient, ReflectionMoment } from "@/components/product/reflection-client";
 
 export const metadata: Metadata = {
-  title: "Review — REHEVO",
+  title: "Reflection — REHEVO",
 };
 
 export default async function ReviewPage({
@@ -31,6 +32,7 @@ export default async function ReviewPage({
     .from("rehearsal_sessions")
     .select("*")
     .eq("id", id)
+    .eq("user_id", data.claims.sub)
     .single();
 
   if (!session) {
@@ -43,92 +45,77 @@ export default async function ReviewPage({
     .eq("session_id", id)
     .order("turn_number", { ascending: true });
 
-  const userTurns = turns?.filter((t) => t.role === "user") || [];
-  const lastUserTurn = userTurns[userTurns.length - 1];
+  const scenario = getScenario(session.scenario_id);
+  const allTurns = turns ?? [];
+  const userTurns = allTurns.filter((t) => t.role === "user");
 
-  const timelineEvents = turns?.slice(0, 6).map((turn, i) => ({
-    time: `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 === 0 ? "00" : "30"}`,
-    label: turn.role === "user" ? "Your response" : "AI question",
-    active: i === turns.length - 1,
-  })) || [];
+  const startedAt = session.started_at
+    ? new Date(session.started_at).getTime()
+    : null;
+
+  const timestampFor = (turn: (typeof allTurns)[number], index: number) => {
+    if (startedAt) {
+      const secs = Math.max(
+        0,
+        Math.round((new Date(turn.created_at).getTime() - startedAt) / 1000)
+      );
+      return `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
+    }
+    const secs = index * 45;
+    return `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
+  };
+
+  // Build moments: each user turn paired with the AI prompt that preceded it.
+  const moments: ReflectionMoment[] = userTurns.map((turn) => {
+    const promptTurn = [...allTurns]
+      .reverse()
+      .find((t) => t.role === "ai" && t.turn_number < turn.turn_number);
+    const evaluation = evaluateMoment(turn.content);
+    return {
+      turnNumber: turn.turn_number,
+      timestamp: timestampFor(turn, turn.turn_number),
+      prompt: promptTurn?.content ?? scenario?.question ?? "",
+      response: turn.content,
+      score: evaluation.score,
+      observation: evaluation.observation,
+      dimension: evaluation.dimension,
+    };
+  });
+
+  // The moment most worth revisiting — lowest scoring user turn.
+  const important =
+    moments.length > 0
+      ? moments.reduce((a, b) => (b.score < a.score ? b : a))
+      : null;
+
+  const dimensions = sessionDimensions(userTurns.map((t) => t.content));
+  const avg =
+    moments.length > 0
+      ? moments.reduce((s, m) => s + m.score, 0) / moments.length
+      : 0;
+
+  // Session duration — started_at to completed_at (or last turn).
+  let duration: string | null = null;
+  const endAt = session.completed_at
+    ? new Date(session.completed_at).getTime()
+    : allTurns.length > 0
+      ? new Date(allTurns.at(-1)!.created_at).getTime()
+      : null;
+  if (startedAt && endAt) {
+    const mins = Math.max(1, Math.round((endAt - startedAt) / 60000));
+    duration = `${mins} min`;
+  }
 
   return (
-    <main className="min-h-screen bg-surface-light text-ink-950 antialiased">
-      <div className="w-full max-w-[720px] mx-auto px-6 md:px-12 lg:px-16 py-16 md:py-24 flex flex-col gap-16">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-3">
-            <StageCue type={2} />
-            <SectionLabel>Reflect</SectionLabel>
-          </div>
-          <h1 className="font-serif text-3xl md:text-4xl text-ink-950 tracking-tight leading-[1.08]">
-            What happened.
-          </h1>
-          <p className="text-base text-ink-800/70 leading-relaxed max-w-md">
-            Review the moments that mattered. Pick one to drill.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-10">
-          <div className="flex flex-col gap-4">
-            <SectionLabel>Performance dimensions</SectionLabel>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-              {[
-                { label: "Composure", value: 78 },
-                { label: "Clarity", value: 72 },
-                { label: "Specificity", value: 65 },
-                { label: "Reasoning", value: 80 },
-                { label: "Delivery", value: 74 },
-              ].map((metric) => (
-                <RehevoMetric key={metric.label} label={metric.label} value={metric.value} />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <SectionLabel>Timeline</SectionLabel>
-            <RehevoTimeline events={timelineEvents} />
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <SectionLabel>Important moments</SectionLabel>
-            <div className="flex flex-col gap-3">
-              {lastUserTurn && (
-                <RehevoObservation
-                  title="Your last response"
-                  body="This was a key moment in the rehearsal. Consider drilling this to improve."
-                  actionLabel="Drill this moment"
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <SectionLabel>Transcript</SectionLabel>
-            <div className="flex flex-col gap-3">
-              {turns?.slice(-4).map((turn) => (
-                <div
-                  key={turn.id}
-                  className="px-4 py-3 border border-ink-800/10 rounded-[6px] bg-white"
-                >
-                  <p className="text-[10px] font-medium tracking-wide text-ink-800/40 uppercase mb-1">
-                    {turn.role === "user" ? "You" : "AI"}
-                  </p>
-                  <p className="text-sm text-ink-800/70 leading-relaxed">{turn.content}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-8">
-            <RehevoButton variant="default" size="lg" className="flex-1 sm:flex-none" href={`/rehearsal/${id}/drill`}>
-              Drill this moment
-            </RehevoButton>
-            <RehevoButton variant="outline" size="lg" className="flex-1 sm:flex-none" href="/dashboard">
-              Back to desk
-            </RehevoButton>
-          </div>
-        </div>
-      </div>
-    </main>
+    <ReflectionClient
+      sessionId={id}
+      scenarioTitle={scenario?.title ?? session.scenario_id}
+      duration={duration}
+      status={session.status}
+      summary={sessionSummary(avg)}
+      dimensions={dimensions}
+      moments={moments}
+      importantMoment={important}
+    />
   );
 }

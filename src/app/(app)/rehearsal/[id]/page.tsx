@@ -26,6 +26,7 @@ export default async function RehearsalPage({
     .from("rehearsal_sessions")
     .select("*")
     .eq("id", id)
+    .eq("user_id", data.claims.sub)
     .single();
 
   if (!session) {
