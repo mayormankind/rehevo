@@ -16,10 +16,10 @@ export const SCENARIOS: Scenario[] = [
   {
     id: "interview",
     label: "Interview",
-    title: "Product Designer — Final Interview",
+    title: "Final Interview",
     description: "Think clearly when the questions stop being predictable.",
     longDescription:
-      "Practice answering unexpected questions about your design decisions, past failures, and how you handle feedback under pressure.",
+      "Practice answering unexpected questions about your decisions, past failures, and how you handle feedback under pressure.",
     question: "Walk me through a decision you made that didn't work out.",
     duration: "~ 42 min",
     image: "/images/hero/enter-the-room.png",

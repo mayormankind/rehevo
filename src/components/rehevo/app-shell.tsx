@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { StageCue } from "@/components/rehevo/stage-cue";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown } from "lucide-react";
 
@@ -82,8 +82,6 @@ function MobileNav({ displayName }: { displayName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const items = NAV_ITEMS;
-
   return (
     <div className="md:hidden">
       <Button
@@ -98,7 +96,7 @@ function MobileNav({ displayName }: { displayName: string }) {
       </Button>
       {open && (
         <div className="absolute top-14 left-0 right-0 bg-ink-950/95 backdrop-blur-sm border-b border-surface-light/[0.07] p-4 flex flex-col gap-1">
-          {items.map((item) => {
+          {NAV_ITEMS.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
             return (
@@ -136,11 +134,15 @@ function AppShellHeader({ displayName }: { displayName: string }) {
   return (
     <header className="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-sm border-b border-surface-light/[0.07]">
       <div className="relative w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-16 h-14 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <StageCue type={1} />
-          <span className="text-sm font-medium tracking-wide text-surface-light/80">
-            REHEVO
-          </span>
+        <Link href="/dashboard" aria-label="REHEVO — Dashboard">
+          <Image
+            src="/rehevo-logo.png"
+            alt="REHEVO"
+            width={120}
+            height={28}
+            className="h-5 w-auto"
+            priority
+          />
         </Link>
         <AppNav />
         <div className="flex items-center gap-2">
@@ -176,11 +178,17 @@ function AppShellInner({
   hideNav?: boolean;
   displayName?: string;
 }) {
+  const pathname = usePathname();
+  // The rehearsal room is fully immersive — no chrome. Sub-routes
+  // (review, drill) get the navigation back.
+  const inRoom = /^\/rehearsal\/[^/]+$/.test(pathname);
+  const hide = hideNav || inRoom;
+
   return (
     <div className="min-h-screen flex flex-col bg-ink-950 text-surface-light antialiased">
-      {!hideNav && <AppShellHeader displayName={displayName} />}
-      <main className="flex-1">{children}</main>
-      {!hideNav && <AppShellFooter />}
+      {!hide && <AppShellHeader displayName={displayName} />}
+      <main className="flex-1 flex flex-col">{children}</main>
+      {!hide && <AppShellFooter />}
     </div>
   );
 }

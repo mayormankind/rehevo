@@ -9,7 +9,7 @@ const SCENARIOS = [
     id: "interview",
     label: "Interview",
     rehearsalLabel: "/ 01",
-    rehearsalTitle: "Product Designer — Final Interview",
+    rehearsalTitle: "Final Interview",
     question: "Walk me through a decision you made that didn't work out.",
     time: "00:42",
   },

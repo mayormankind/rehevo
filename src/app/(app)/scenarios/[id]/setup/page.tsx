@@ -1,47 +1,13 @@
 import { Metadata } from "next";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { StageCue } from "@/components/rehevo/stage-cue";
-import { SectionLabel } from "@/components/rehevo/section-label";
-import { EditorialHeading } from "@/components/rehevo/editorial-heading";
-import { Surface } from "@/components/rehevo/surface";
+import { Clock } from "lucide-react";
+import { getScenario } from "@/lib/constants/scenarios";
 import SetupForm from "./setup-form";
 
 export const metadata: Metadata = {
-  title: "Prepare — REHEVO",
-};
-
-const SCENARIOS: Record<string, { label: string; title: string; description: string; question: string }> = {
-  interview: {
-    label: "Interview",
-    title: "Product Designer — Final Interview",
-    description: "Practice answering unexpected questions about your design decisions, past failures, and how you handle feedback under pressure.",
-    question: "Walk me through a decision you made that didn't work out.",
-  },
-  presentation: {
-    label: "Presentation",
-    title: "Q3 All-Hands — Executive Deck",
-    description: "Rehearse explaining metrics, defending choices, and handling executive-level pushback in a high-stakes presentation setting.",
-    question: "What's the one metric that tells you if this quarter worked?",
-  },
-  pitch: {
-    label: "Pitch",
-    title: "Series A — Investor Pitch",
-    description: "Practice articulating your vision, defending your market position, and answering tough questions about traction and timing.",
-    question: "Why is now the right time for this, and why are you the team?",
-  },
-  defense: {
-    label: "Defense",
-    title: "PhD Thesis Defense",
-    description: "Practice responding to critical questions about your methodology, findings, and the limitations of your research.",
-    question: "How would your findings change if your core assumption is wrong?",
-  },
-  difficult: {
-    label: "Difficult Conversation",
-    title: "Performance Review — Direct Report",
-    description: "Practice giving constructive feedback, addressing underperformance, and handling emotional reactions with composure.",
-    question: "How do you think things are going, from your perspective?",
-  },
+  title: "Set the room — REHEVO",
 };
 
 export default async function ScenarioSetupPage({
@@ -59,45 +25,77 @@ export default async function ScenarioSetupPage({
     redirect("/login");
   }
 
-  const scenario = SCENARIOS[id];
+  const scenario = getScenario(id);
 
   if (!scenario) {
-    redirect("/dashboard");
+    redirect("/scenarios");
   }
 
   return (
-    <main className="min-h-screen bg-surface-light text-ink-950 antialiased">
-      <div className="w-full max-w-[720px] mx-auto px-6 md:px-12 lg:px-16 py-16 md:py-24 flex flex-col gap-16">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-3">
-            <StageCue type={2} />
-            <SectionLabel>Prepare</SectionLabel>
-          </div>
-          <EditorialHeading level={1}>
-            {scenario.title}
-          </EditorialHeading>
-          <p className="text-base text-ink-800/70 leading-relaxed max-w-md">
-            {scenario.description}
-          </p>
-        </div>
+    <main className="relative bg-ink-950 text-surface-light antialiased">
+      {/* Full-bleed background */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/images/scenarios/scenario-setup-background.png"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-ink-950/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink-950/60 via-transparent to-ink-950/70" />
+      </div>
 
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4">
-            <SectionLabel>Setup</SectionLabel>
-            <Surface className="p-6 md:p-8">
-              <SetupForm scenarioId={id} />
-            </Surface>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <SectionLabel>What to expect</SectionLabel>
-            <div className="flex flex-col gap-3 text-sm text-ink-800/60">
-              <p>The AI will ask you a series of realistic questions based on this scenario.</p>
-              <p>Answer as if you were in the actual situation. The more specific you are, the more useful the rehearsal will be.</p>
-              <p className="font-serif italic text-ink-800/80">
-                &ldquo;{scenario.question}&rdquo;
+      <div className="relative z-10 w-full max-w-[1280px] mx-auto px-6 md:px-12 lg:px-16 py-14 md:py-20 min-h-screen">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-0">
+          {/* ── Left: scenario context ── */}
+          <div className="lg:pr-12 xl:pr-16 flex flex-col">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="h-px w-6 bg-rehevo-amber/80" />
+              <p className="text-[10px] font-medium tracking-[0.22em] uppercase text-rehevo-amber">
+                {scenario.label}
               </p>
             </div>
+
+            <h1 className="font-serif text-4xl md:text-5xl leading-[1.08] tracking-tight mb-4">
+              {scenario.title}
+            </h1>
+
+            <p className="flex items-center gap-2 text-xs text-surface-light/50 mb-5">
+              <Clock className="w-3.5 h-3.5" />
+              {scenario.duration}
+            </p>
+
+            <p className="text-sm text-surface-light/55 leading-relaxed max-w-md mb-8">
+              {scenario.longDescription}
+            </p>
+
+            {/* Room image */}
+            <div className="relative rounded-lg overflow-hidden border border-surface-light/10 aspect-[16/10] mt-auto">
+              <Image
+                src="/images/scenarios/scenario-setup.png"
+                alt=""
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1024px) 100vw, 560px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink-950/30 to-transparent" />
+            </div>
+          </div>
+
+          {/* ── Right: setup form ── */}
+          <div className="lg:border-l lg:border-surface-light/10 lg:pl-12 xl:pl-16 flex flex-col">
+            <h2 className="font-serif text-3xl md:text-4xl leading-[1.1] tracking-tight mb-3">
+              Set the room.
+            </h2>
+            <p className="text-sm text-surface-light/50 leading-relaxed mb-10 max-w-md">
+              The more context you give, the better we can shape your rehearsal.
+              Add the details of your situation, your goals, and how challenging
+              you want it to be.
+            </p>
+
+            <SetupForm scenarioId={id} />
           </div>
         </div>
       </div>

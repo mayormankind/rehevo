@@ -11,11 +11,11 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 const CATEGORIES = [
-  { id: "interview", label: "Interview", title: "Product Designer — Final Interview", question: "Walk me through a decision you made that didn't work out." },
-  { id: "presentation", label: "Presentation", title: "Q3 All-Hands — Executive Deck", question: "What's the one metric that tells you if this quarter worked?" },
-  { id: "pitch", label: "Pitch", title: "Series A — Investor Pitch", question: "Why is now the right time for this, and why are you the team?" },
-  { id: "defense", label: "Defense", title: "PhD Thesis Defense", question: "How would your findings change if your core assumption is wrong?" },
-  { id: "difficult", label: "Difficult Conversation", title: "Performance Review — Direct Report", question: "How do you think things are going, from your perspective?" },
+  { id: "interview", label: "Interview", title: "Final Interview", question: "Walk me through a decision you made that didn't work out." },
+  { id: "presentation", label: "Presentation", title: "Executive Deck", question: "What's the one metric that tells you if this quarter worked?" },
+  { id: "pitch", label: "Pitch", title: "Investor Pitch", question: "Why is now the right time for this, and why are you the team?" },
+  { id: "defense", label: "Defense", title: "Performance Review", question: "How would your findings change if your core assumption is wrong?" },
+  { id: "difficult", label: "Difficult Conversation", title: "Giving Difficult Feedback", question: "How do you think things are going, from your perspective?" },
 ];
 
 export default function OnboardingForm() {
