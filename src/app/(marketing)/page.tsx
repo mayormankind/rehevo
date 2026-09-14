@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, Play, Menu, X } from "lucide-react";
+import { ChevronRight, Play, Menu, X, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 import { StageCue } from "@/components/marketing/stage-cue";
 import { NavLinks } from "@/components/marketing/nav-links";
 import { Reassurance } from "@/components/marketing/reassurance";
@@ -18,16 +19,24 @@ import { Footer } from "@/components/marketing/footer";
 export default function MarketingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 10);
   }, []);
 
   useEffect(() => {
-    // Initial scroll check omitted to avoid setState-in-effect.
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
+
+  // Check auth state — drives CTA swapping, no redirect here.
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getClaims().then(({ data }) => {
+      setIsLoggedIn(!!data?.claims);
+    });
+  }, []);
 
   return (
     <main className="min-h-screen bg-ink-950 text-foreground antialiased">
@@ -59,17 +68,31 @@ export default function MarketingPage() {
         </div>
 
         <div className="hidden md:flex items-center gap-4 text-sm">
-          <Link href="/login" className="text-foreground/70 hover:text-foreground transition-colors">
-            Sign in
-          </Link>
-          <Link href="/signup">
-            <Button
-              variant="ghost"
-              className="text-rehevo-amber hover:text-rehevo-amber rounded-full py-4 border border-rehevo-amber hover:bg-rehevo-amber/10"
-            >
-              Start rehearsing
-            </Button>
-          </Link>
+          {isLoggedIn ? (
+            <Link href="/dashboard">
+              <Button
+                variant="ghost"
+                className="flex items-center gap-2 text-rehevo-amber hover:text-rehevo-amber rounded-full py-4 border border-rehevo-amber hover:bg-rehevo-amber/10"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Go to dashboard
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className="text-foreground/70 hover:text-foreground transition-colors">
+                Sign in
+              </Link>
+              <Link href="/signup">
+                <Button
+                  variant="ghost"
+                  className="text-rehevo-amber hover:text-rehevo-amber rounded-full py-4 border border-rehevo-amber hover:bg-rehevo-amber/10"
+                >
+                  Start rehearsing
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="flex md:hidden items-center">
@@ -167,27 +190,42 @@ export default function MarketingPage() {
                 transition={{ duration: 0.4, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
                 className="px-6 pb-8 flex flex-col gap-3"
               >
-                <Link
-                  href="/signup"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block"
-                >
-                  <Button className="w-full h-12 bg-rehevo-amber text-ink-950 hover:bg-rehevo-amber/90 font-medium rounded-full text-sm">
-                    Start rehearsing
-                  </Button>
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block"
-                >
-                  <Button
-                    variant="ghost"
-                    className="w-full h-12 text-foreground/70 hover:text-foreground rounded-full border border-foreground/20 hover:border-foreground/40 hover:bg-transparent text-sm"
+                {isLoggedIn ? (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block"
                   >
-                    Sign in
-                  </Button>
-                </Link>
+                    <Button className="w-full h-12 bg-rehevo-amber text-ink-950 hover:bg-rehevo-amber/90 font-medium rounded-full text-sm flex items-center justify-center gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Go to dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button className="w-full h-12 bg-rehevo-amber text-ink-950 hover:bg-rehevo-amber/90 font-medium rounded-full text-sm">
+                        Start rehearsing
+                      </Button>
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button
+                        variant="ghost"
+                        className="w-full h-12 text-foreground/70 hover:text-foreground rounded-full border border-foreground/20 hover:border-foreground/40 hover:bg-transparent text-sm"
+                      >
+                        Sign in
+                      </Button>
+                    </Link>
+                  </>
+                )}
                 <p className="text-center text-[10px] tracking-[0.16em] uppercase text-foreground/25 pt-2">
                   Private by design
                 </p>
@@ -227,16 +265,29 @@ export default function MarketingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-start gap-4 mb-12">
-              <Link href="/signup">
-                <Button
-                  size="lg"
-                  className="border border-white/20 text-white hover:bg-rehevo-amber/90 font-medium px-8 h-12 rounded-full" variant={"outline"}
-                >
-                  <StageCue type={1} />
-                  <span className="ml-1">Enter your rehearsal room</span>
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard">
+                  <Button
+                    size="lg"
+                    className="border border-rehevo-amber/60 text-rehevo-amber hover:bg-rehevo-amber hover:text-ink-950 font-medium px-8 h-12 rounded-full" variant={"outline"}
+                  >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Go to your dashboard
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/signup">
+                  <Button
+                    size="lg"
+                    className="border border-white/20 text-white hover:bg-rehevo-amber/90 font-medium px-8 h-12 rounded-full" variant={"outline"}
+                  >
+                    <StageCue type={1} />
+                    <span className="ml-1">Enter your rehearsal room</span>
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
               <Link href="/how-it-works">
                 <Button
                   size="lg" variant={"outline"}
