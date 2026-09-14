@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,8 +8,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { Mic, Keyboard, LogOut, Lock, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getScenario } from "@/lib/constants/scenarios";
-import { getNextAIResponse } from "@/lib/ai/mock-engine";
+import { getNextAIResponse } from "@/lib/ai/mock-engine"; // fallback only
 import type { RehearsalSession, RehearsalTurn } from "@/types/rehearsal";
+import type { TurnMessage } from "@/lib/ai/openai-engine";
 
 const TOTAL_QUESTIONS = 5;
 
@@ -85,6 +86,85 @@ function formatElapsed(seconds: number) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Speech recognition shim — cross-browser                           */
+/* ------------------------------------------------------------------ */
+
+// Minimal type declarations for the Web Speech API so we don't depend
+// on a specific @types/web version or TypeScript target.
+interface SpeechRecognitionResultItem {
+  readonly transcript: string;
+  readonly confidence: number;
+}
+interface SpeechRecognitionResult {
+  readonly [index: number]: SpeechRecognitionResultItem;
+  readonly length: number;
+  readonly isFinal: boolean;
+}
+interface SpeechRecognitionResultList {
+  readonly [index: number]: SpeechRecognitionResult;
+  readonly length: number;
+}
+interface SpeechRecognitionEvent extends Event {
+  readonly results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((e: SpeechRecognitionEvent) => void) | null;
+  onerror: ((e: Event) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionInstance;
+
+function getSpeechRecognition(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") return null;
+  const w = window as typeof window & {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  AI fetch — calls /api/ai/turn, falls back to mock on error        */
+/* ------------------------------------------------------------------ */
+
+async function fetchAIPrompt(
+  scenarioId: string,
+  context: string | null,
+  goal: string | null,
+  difficulty: number,
+  turns: TurnMessage[],
+  isFirstQuestion: boolean
+): Promise<string> {
+  try {
+    const res = await fetch("/api/ai/turn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scenarioId,
+        context,
+        goal,
+        difficulty,
+        turns,
+        isFirstQuestion,
+      }),
+    });
+    if (!res.ok) throw new Error(`AI API ${res.status}`);
+    const data = (await res.json()) as { prompt?: string };
+    if (!data.prompt) throw new Error("Empty prompt");
+    return data.prompt;
+  } catch {
+    // Graceful fallback — mock keeps the room functional without a key
+    const aiCount = turns.filter((t) => t.role === "ai").length;
+    return getNextAIResponse(scenarioId, aiCount);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Rehearsal room                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -107,6 +187,7 @@ export default function RehearsalRoomClient({
   const resumable =
     initialSession.status !== "completed" && initialAiTurns.length > 0;
 
+  // ── State ──────────────────────────────────────────────────────────
   const [state, setState] = useState<RoomState>(
     initialSession.status === "completed"
       ? "completed"
@@ -124,29 +205,40 @@ export default function RehearsalRoomClient({
   const [userResponse, setUserResponse] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [exiting, setExiting] = useState(false);
-  const speakingRef = useRef(false);
 
-  // Completed sessions go straight to review.
+  // Accumulate conversation for context-aware AI prompts
+  const [conversationTurns, setConversationTurns] = useState<TurnMessage[]>(
+    initialTurns.map((t) => ({
+      role: t.role as "user" | "ai",
+      content: t.content,
+    }))
+  );
+
+  // Refs for stale-closure safety in async handlers
+  const speakingRef = useRef(false);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+
+  // ── Redirect completed sessions ────────────────────────────────────
   useEffect(() => {
     if (initialSession.status === "completed") {
       router.replace(`/rehearsal/${sessionId}/review`);
     }
   }, [initialSession.status, router, sessionId]);
 
-  // Elapsed timer — runs once the session has started.
+  // ── Elapsed timer ──────────────────────────────────────────────────
   useEffect(() => {
     if (!initialSession.started_at && state === "ready") return;
     const start = initialSession.started_at
       ? new Date(initialSession.started_at).getTime()
       : Date.now();
-    const tick = () =>
-      setElapsed(Math.floor((Date.now() - start) / 1000));
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSession.started_at]);
 
+  // ── DB helpers ─────────────────────────────────────────────────────
   const insertTurn = async (
     turnNumber: number,
     role: "user" | "ai",
@@ -160,18 +252,33 @@ export default function RehearsalRoomClient({
     });
   };
 
+  // ── Rehearsal lifecycle ────────────────────────────────────────────
   const startRehearsal = async () => {
+    setState("processing"); // "Thinking..." while AI generates opener
+
     await supabase
       .from("rehearsal_sessions")
       .update({ status: "listening", started_at: new Date().toISOString() })
       .eq("id", sessionId);
 
-    const prompt = getNextAIResponse(initialSession.scenario_id, 0);
-    await insertTurn(turnCount, "ai", prompt);
+    const prompt = await fetchAIPrompt(
+      initialSession.scenario_id,
+      initialSession.context ?? null,
+      initialSession.goal ?? null,
+      initialSession.difficulty ?? 3,
+      [],
+      true // first question
+    );
 
+    await insertTurn(turnCount, "ai", prompt);
+    const nextTurns: TurnMessage[] = [{ role: "ai", content: prompt }];
+    setConversationTurns(nextTurns);
     setTurnCount((n) => n + 1);
     setQuestionIndex(1);
     setCurrentPrompt(prompt);
+
+    setState("responding");
+    await new Promise((r) => setTimeout(r, 800));
     setState("listening");
   };
 
@@ -192,11 +299,18 @@ export default function RehearsalRoomClient({
     setUserResponse("");
     setState("processing");
 
-    await insertTurn(turnCount, "user", response);
+    const userTurnNum = turnCount;
+    await insertTurn(userTurnNum, "user", response);
+
+    const updatedTurns: TurnMessage[] = [
+      ...conversationTurns,
+      { role: "user", content: response },
+    ];
+    setConversationTurns(updatedTurns);
     setTurnCount((n) => n + 1);
 
-    // Brief thinking beat before the counterpart responds.
-    await new Promise((r) => setTimeout(r, 1400));
+    // Thinking beat
+    await new Promise((r) => setTimeout(r, 900));
 
     if (questionIndex >= TOTAL_QUESTIONS) {
       await completeRehearsal();
@@ -204,8 +318,22 @@ export default function RehearsalRoomClient({
     }
 
     setState("responding");
-    const next = getNextAIResponse(initialSession.scenario_id, questionIndex);
-    await insertTurn(turnCount + 1, "ai", next);
+
+    const next = await fetchAIPrompt(
+      initialSession.scenario_id,
+      initialSession.context ?? null,
+      initialSession.goal ?? null,
+      initialSession.difficulty ?? 3,
+      updatedTurns,
+      false
+    );
+
+    await insertTurn(userTurnNum + 1, "ai", next);
+    const finalTurns: TurnMessage[] = [
+      ...updatedTurns,
+      { role: "ai", content: next },
+    ];
+    setConversationTurns(finalTurns);
     setTurnCount((n) => n + 1);
     setQuestionIndex((i) => i + 1);
     setCurrentPrompt(next);
@@ -224,20 +352,63 @@ export default function RehearsalRoomClient({
     router.push("/dashboard");
   };
 
-  const startSpeaking = () => {
+  // ── Voice (Web Speech API) ─────────────────────────────────────────
+  const startSpeaking = useCallback(() => {
     if (state !== "listening" || speakingRef.current) return;
     speakingRef.current = true;
     setSpeaking(true);
-  };
+    setUserResponse(""); // clear any previous text
 
-  const stopSpeaking = () => {
+    const SR = getSpeechRecognition();
+    if (SR) {
+      const r = new SR();
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = "en-US";
+
+      r.onresult = (e: SpeechRecognitionEvent) => {
+        const transcript = Array.from(e.results)
+          .map((result) => result[0].transcript)
+          .join("");
+        setUserResponse(transcript);
+        setTypedOpen(true); // show panel with live transcript
+      };
+
+      r.onerror = () => {
+        // Mic permission denied or network error — just open empty panel
+        setTypedOpen(true);
+      };
+
+      r.onend = () => {
+        recognitionRef.current = null;
+      };
+
+      try {
+        r.start();
+        recognitionRef.current = r;
+      } catch {
+        setTypedOpen(true);
+      }
+    } else {
+      // Browser doesn't support Speech API — fall back to typed panel
+      setTypedOpen(true);
+    }
+  }, [state]);
+
+  const stopSpeaking = useCallback(() => {
     if (!speakingRef.current) return;
     speakingRef.current = false;
     setSpeaking(false);
-    // No live transcription yet (M5) — capture what was said as text.
-    setTypedOpen(true);
-  };
 
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
+    setTypedOpen(true); // ensure panel is open with whatever transcript was captured
+  }, []);
+
+  // ── Derived display state ──────────────────────────────────────────
   const displayState: RoomState =
     speaking && state === "listening" ? "speaking" : state;
   const inRoom = state !== "ready" && state !== "completed";
@@ -443,7 +614,7 @@ export default function RehearsalRoomClient({
           )}
         </div>
 
-        {/* Typed response panel */}
+        {/* Typed / voice-transcription panel */}
         <AnimatePresence>
           {typedOpen && inRoom && (
             <motion.div
@@ -464,7 +635,11 @@ export default function RehearsalRoomClient({
                       submitResponse();
                     }
                   }}
-                  placeholder="Type what you said..."
+                  placeholder={
+                    speaking
+                      ? "Transcribing…"
+                      : "Type what you said… (⌘↵ to send)"
+                  }
                   rows={3}
                   aria-label="Your response"
                   className="flex-1 bg-transparent text-sm text-surface-light placeholder:text-surface-light/30 outline-none resize-none px-1"

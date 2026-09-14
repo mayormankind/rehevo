@@ -2,7 +2,8 @@ import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import DrillClient from "@/components/rehevo/drill-client";
-import { evaluateMoment, getNextAIResponse } from "@/lib/ai/mock-engine";
+import { getNextAIResponse } from "@/lib/ai/mock-engine";
+import { evaluateTurn } from "@/lib/ai/openai-engine";
 import { getScenario } from "@/lib/constants/scenarios";
 
 export const metadata: Metadata = {
@@ -19,9 +20,7 @@ export default async function DrillPage({
   const { id } = await params;
   const { moment } = await searchParams;
   const supabase = await createClient();
-  const {
-    data,
-  } = await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
 
   if (!data?.claims) {
     redirect("/login");
@@ -53,23 +52,33 @@ export default async function DrillPage({
 
   const scenario = getScenario(session.scenario_id);
 
-  // Resolve the moment to drill — the requested turn, or the weakest one.
+  // Evaluate all user turns in parallel to find the weakest (for fallback)
+  const evaluated = await Promise.all(
+    userTurns.map(async (t) => {
+      const promptTurn = [...allTurns]
+        .reverse()
+        .find((p) => p.role === "ai" && p.turn_number < t.turn_number);
+      const prompt = promptTurn?.content ?? scenario?.question ?? "";
+      const evaluation = await evaluateTurn(session.scenario_id, prompt, t.content);
+      return { t, prompt, evaluation };
+    })
+  );
+
+  // Resolve the moment to drill — requested turn or weakest by score
   const requested = Number(moment);
-  let target = Number.isFinite(requested)
-    ? userTurns.find((t) => t.turn_number === requested)
+  let targetEntry = Number.isFinite(requested)
+    ? evaluated.find((e) => e.t.turn_number === requested)
     : undefined;
-  if (!target) {
-    target = userTurns
-      .map((t) => ({ t, score: evaluateMoment(t.content).score }))
-      .reduce((a, b) => (b.score < a.score ? b : a)).t;
+  if (!targetEntry) {
+    targetEntry = evaluated.reduce((a, b) =>
+      b.evaluation.score < a.evaluation.score ? b : a
+    );
   }
 
-  const promptTurn = [...allTurns]
-    .reverse()
-    .find((t) => t.role === "ai" && t.turn_number < target.turn_number);
-  const prompt = promptTurn?.content ?? scenario?.question ?? "";
+  const { t: target, prompt, evaluation: original } = targetEntry;
 
-  // The follow-up the counterpart would naturally ask next.
+  // Retry prompt: AI follow-up contextual to the original moment.
+  // Uses mock engine for the follow-up question — will upgrade to real AI in M5.5.
   const questionIndex = allTurns.filter(
     (t) => t.role === "ai" && t.turn_number < target.turn_number
   ).length;
@@ -77,8 +86,6 @@ export default async function DrillPage({
     session.scenario_id,
     Math.min(questionIndex + 1, 4)
   );
-
-  const original = evaluateMoment(target.content);
 
   const startedAt = session.started_at
     ? new Date(session.started_at).getTime()
@@ -91,13 +98,10 @@ export default async function DrillPage({
     : target.turn_number * 45;
   const timestamp = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
 
-  // Other moments available for "try another moment".
-  const otherMoments = userTurns
-    .filter((t) => t.turn_number !== target.turn_number)
-    .map((t) => ({
-      turnNumber: t.turn_number,
-      score: evaluateMoment(t.content).score,
-    }))
+  // Other moments for "try another moment" — sorted weakest first
+  const otherMoments = evaluated
+    .filter((e) => e.t.turn_number !== target.turn_number)
+    .map((e) => ({ turnNumber: e.t.turn_number, score: e.evaluation.score }))
     .sort((a, b) => a.score - b.score);
 
   return (

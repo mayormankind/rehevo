@@ -1,11 +1,8 @@
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import {
-  evaluateMoment,
-  sessionDimensions,
-  sessionSummary,
-} from "@/lib/ai/mock-engine";
+import { sessionSummary } from "@/lib/ai/mock-engine";
+import { evaluateTurn } from "@/lib/ai/openai-engine";
 import { getScenario } from "@/lib/constants/scenarios";
 import { ReflectionClient, ReflectionMoment } from "@/components/product/reflection-client";
 
@@ -20,9 +17,7 @@ export default async function ReviewPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data,
-  } = await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
 
   if (!data?.claims) {
     redirect("/login");
@@ -65,36 +60,56 @@ export default async function ReviewPage({
     return `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
   };
 
-  // Build moments: each user turn paired with the AI prompt that preceded it.
-  const moments: ReflectionMoment[] = userTurns.map((turn) => {
-    const promptTurn = [...allTurns]
-      .reverse()
-      .find((t) => t.role === "ai" && t.turn_number < turn.turn_number);
-    const evaluation = evaluateMoment(turn.content);
-    return {
-      turnNumber: turn.turn_number,
-      timestamp: timestampFor(turn, turn.turn_number),
-      prompt: promptTurn?.content ?? scenario?.question ?? "",
-      response: turn.content,
-      score: evaluation.score,
-      observation: evaluation.observation,
-      dimension: evaluation.dimension,
-    };
-  });
+  // Evaluate all user turns in parallel with real AI (falls back to mock)
+  const evaluated = await Promise.all(
+    userTurns.map(async (turn) => {
+      const promptTurn = [...allTurns]
+        .reverse()
+        .find((t) => t.role === "ai" && t.turn_number < turn.turn_number);
+      const prompt = promptTurn?.content ?? scenario?.question ?? "";
+      const evaluation = await evaluateTurn(session.scenario_id, prompt, turn.content);
+      return { turn, prompt, evaluation };
+    })
+  );
 
-  // The moment most worth revisiting — lowest scoring user turn.
+  const moments: ReflectionMoment[] = evaluated.map(({ turn, prompt, evaluation }) => ({
+    turnNumber: turn.turn_number,
+    timestamp: timestampFor(turn, turn.turn_number),
+    prompt,
+    response: turn.content,
+    score: evaluation.score,
+    observation: evaluation.observation,
+    dimension: evaluation.dimension,
+  }));
+
+  // The moment most worth revisiting — lowest scoring.
   const important =
     moments.length > 0
       ? moments.reduce((a, b) => (b.score < a.score ? b : a))
       : null;
 
-  const dimensions = sessionDimensions(userTurns.map((t) => t.content));
+  // Session-level dimensions: average each dim across all turns.
+  const dimensions = (() => {
+    if (evaluated.length === 0) return [];
+    const acc: Record<string, number[]> = {};
+    for (const { evaluation } of evaluated) {
+      for (const d of evaluation.dimensions) {
+        if (!acc[d.label]) acc[d.label] = [];
+        acc[d.label].push(d.value);
+      }
+    }
+    return Object.entries(acc).map(([label, values]) => ({
+      label,
+      value: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
+    }));
+  })();
+
   const avg =
     moments.length > 0
       ? moments.reduce((s, m) => s + m.score, 0) / moments.length
       : 0;
 
-  // Session duration — started_at to completed_at (or last turn).
+  // Session duration
   let duration: string | null = null;
   const endAt = session.completed_at
     ? new Date(session.completed_at).getTime()
