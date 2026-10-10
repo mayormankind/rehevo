@@ -12,5 +12,17 @@ jobs:
     steps:
       - name: Send Heartbeat Ping to Supabase API
         run: |
-          curl --fail-with-body -i -X GET "${{ secrets.SUPABASE_URL }}/auth/v1/health" \
-          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
+          SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+          SUPABASE_URL="${SUPABASE_URL#*=}"
+          SUPABASE_URL="${SUPABASE_URL#\"}"
+          SUPABASE_URL="${SUPABASE_URL%\"}"
+          SUPABASE_URL="${SUPABASE_URL#\'}"
+          SUPABASE_URL="${SUPABASE_URL%\'}"
+          SUPABASE_URL="${SUPABASE_URL%/}"
+
+          if [[ "$SUPABASE_URL" != http://* && "$SUPABASE_URL" != https://* ]]; then
+            SUPABASE_URL="https://${SUPABASE_URL}"
+          fi
+
+          curl --retry 5 --retry-all-errors --retry-delay 2 --fail-with-body -i -X GET "${SUPABASE_URL}/auth/v1/health" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
